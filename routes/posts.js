@@ -37,8 +37,9 @@ router.post('/', (request, response, next) =>{
 
 router.patch('/:id', (request, response) =>{
     const id  = request.params.id
-    PostModel.findByIdAndUpdate({_id: id}, 
-        {title, body} = request.body, 
+    PostModel.findByIdAndUpdate(id, 
+        {$set: request.body},
+        {new: true}, 
         (err, newPost)=>{
         if(!err){
             response.json(newPost)
