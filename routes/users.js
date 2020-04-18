@@ -1,41 +1,36 @@
 const express = require('express')
 const router = express.Router() 
 const UserModel = require('../models/users')
+const PostModel = require('../models/posts')
 
+//list all users
+router.get('/', async(request, response)=> {  
+    try{
+        const allUsers =await UserModel.find({})
+        response.json(allUsers)
+    }catch(err){
+        next("connection faild")
+    }
 
-// router.use((req, res, next) => {
-//     console.log("user routers")
-//     next()
-// }) 
-
-
-router.get('/', (request, response, next)=> {  //list all users
-    UserModel.find({}, (err, users)=>{
-        if(!err){
-            response.json(users)
-        }
-        next(err)
-    })
-    // response.send('listing users')
 })
 
-router.get('/:id', (request, response, next)=> {      //return by id
+/* return by id */
+router.get('/:id',async (request, response, next)=> {      
     const routeParams = request.params
     // const { id, postId, xForTest } object distructure
-    console.log("the iddddddddddddd "+request.params.id)
     const id  = request.params.id
-    const userById = UserModel.findById(id, (err,user) =>{
-        if(!err){
-            response.json(user)
-        }
-        next(err)
-    })
+    try{
+    const userById = await UserModel.findById(id)
+    response.json(userById)
+    }catch(error){
+        next("user not found")
+    }
 })
 
-router.post('/', (request, response, next) =>{  //insert new user
-    // debugger
-    //i need the request body which available in request.body
-    const { firstName, lastName, password, dob, gender, email, phoneNo } = request.body
+
+//insert new user
+router.post('/',async (request, response, next) =>{  
+    const { firstName, lastName, password, dob, gender, email, phoneNo, tokgen } = request.body
     //construct user instance from userModel
     const userInstance = new UserModel({
         firstName,
@@ -45,49 +40,69 @@ router.post('/', (request, response, next) =>{  //insert new user
         gender,
         email,
         phoneNo,
+        tokgen,
     })
     //save user instance in DB
-    userInstance.save( (err, userSavedInDB)=>{
-        if(!err) return response.json(userSavedInDB)
-        next(err)
-    })
+    try{
+        const newUser = await userInstance.save()
+        console.log(newUser.tokgen)
+        response.send(newUser)
+    }catch(err){
+        next("Error saving in DB")
+    }
+
 })
 
-router.patch('/:id', (request, response) =>{
+//update use data
+router.patch('/:id',async (request, response) =>{
   
     const id  = request.params.id
-    const userById = UserModel.findById(id, (err,foundUser) =>{
-        if(!err){
-            if(!foundUser){
-                response.send("User Not Found")
-            }else{
-                if(request.body.firstName){foundUser.firstName = request.body.firstName}
-                if(request.body.lastName){foundUser.lastName = request.body.lastName}
-                if(request.body.password){foundUser.password = request.body.password}
-                if(request.body.email){foundUser.email = request.body.email}
-                if(request.body.gender){foundUser.gender = request.body.gender}
-                if(request.body.dob){foundUser.dob = request.body.dob}
-                if(request.body.phoneNo){foundUser.phoneNo = request.body.phoneNo}
+    try{
+        const foundUser =await UserModel.findById(id)
+        if(!foundUser){
+            response.send("User Not Found")
+        }else{
+            if(request.body.firstName){foundUser.firstName = request.body.firstName}
+            if(request.body.lastName){foundUser.lastName = request.body.lastName}
+            if(request.body.password){foundUser.password = request.body.password}
+            if(request.body.email){foundUser.email = request.body.email}
+            if(request.body.gender){foundUser.gender = request.body.gender}
+            if(request.body.dob){foundUser.dob = request.body.dob}
+            if(request.body.phoneNo){foundUser.phoneNo = request.body.phoneNo}
+            const saveUser = await foundUser.save()
+            response.json(saveUser)
 
-                foundUser.save( (err, updatedUser)=>{
-                    if(!err) return response.json(updatedUser)
-                })
-            }
-        }
-    })
+        }     
+    }catch(error){
+        next("not found")
+    }
+   
 })
 
 
-
-router.delete('/:id', (request, response)=>{
+router.delete('/:id', async(request, response, next)=>{
     const id  = request.params.id
-    const removeUserById = UserModel.remove( {_id: id}, (err) =>{
-        if(!err){
-            response.send("User Deleted Successfully!")
-        }
-    })
+    try {
+        const user = await UserModel.findById(id)
+        const removeUserById =await UserModel.remove({_id: id})
+        response.send("User Deleted!")
+    }
+    catch(err){
+        next("user is not exists")
+    }
 
 })
 
+
+/*   Find specific user posts   */ 
+router.get('/:id/posts', async(request, response, next)=> {
+    const id = request.params.id
+    try{
+        const userPosts = await PostModel.find({author: id})
+        response.json(userPosts)
+    }catch{
+        next("user not found")
+    }
+})
 
 module.exports = router

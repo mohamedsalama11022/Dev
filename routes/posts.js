@@ -2,53 +2,68 @@ const express = require('express')
 const router = express.Router() 
 const PostModel = require('../models/posts')
 
-router.get('/', (request, response, next)=> {  
-    PostModel.find({}, (err, posts)=>{
-        if(!err){
-            response.json(posts)
-        }
-        next(err)
-    })
+
+/* List all Posts */
+router.get('/', async(request, response, next)=> {  
+
+try{
+    const allPosts = await PostModel.find({}).populate('author').exec()
+    response.json(allPosts)
+}catch(err){
+    next("connection faild")
+    }
+
 })
 
-router.get('/:id', (request, response, next)=> {      
+
+/* List Post By Id */
+router.get('/:id', async(request, response, next)=> {      
     const routeParams = request.params
-    console.log("the iddddddddddddd "+request.params.id)
     const id  = request.params.id
-    const postById = PostModel.findById(id, (err,post) =>{
-        if(!err){
-            response.json(post)
-        }
-        next(err)
-    })
+    try{
+        const postById =await PostModel.findById(id).populate('author').exec()
+        response.json(postById)
+    }
+   catch(err){
+    next("connection faild")
+   }
+
 })
 
-router.post('/', (request, response, next) =>{  
-    const { title, body } = request.body
+
+/* Insert New Post */
+router.post('/', async(request, response, next) =>{  
+    const { title, body, author } = request.body
     const postInstance = new PostModel({
         title,
         body,
+        author
     })
-    postInstance.save( (err, postSavedInDB)=>{
-        if(!err) return response.json(postSavedInDB)
-        next(err)
-    })
+    try{
+        const newPost = await postInstance.save()
+        response.json(newPost)
+    }catch(err){
+        next("error saving the post")
+    }
+
 })
 
-router.patch('/:id', (request, response) =>{
+
+/* Update Post */
+router.patch('/:id', async(request, responsem, next) =>{
     const id  = request.params.id
-    PostModel.findByIdAndUpdate(id, 
-        {$set: request.body},
-        {new: true}, 
-        (err, newPost)=>{
-        if(!err){
-            response.json(newPost)
-        }
-    })
+    try{
+        const updatedPost = await PostModel.findByIdAndUpdate(id, {$set: request.body},{new: true})
+        responsem.json(updatedPost)
+    }catch(err){
+        next("error updating the post")
+    }
+    
+
 })
 
 
-
+/* Delete Post */
 router.delete('/:id', (request, response)=>{
     const id  = request.params.id
     const removePostById = PostModel.remove( {_id: id}, (err) =>{
