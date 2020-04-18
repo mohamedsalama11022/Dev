@@ -54,12 +54,25 @@ router.post('/', (request, response, next) =>{  //insert new user
 })
 
 router.patch('/:id', (request, response) =>{
+  
     const id  = request.params.id
-    UserModel.findByIdAndUpdate({_id: id}, 
-        {firstName, lastName, password, dob, gender, email, phoneNo} = request.body, 
-        (err, newUser)=>{
+    const userById = UserModel.findById(id, (err,foundUser) =>{
         if(!err){
-            response.json(newUser)
+            if(!foundUser){
+                response.send("User Not Found")
+            }else{
+                if(request.body.firstName){foundUser.firstName = request.body.firstName}
+                if(request.body.lastName){foundUser.lastName = request.body.lastName}
+                if(request.body.password){foundUser.password = request.body.password}
+                if(request.body.email){foundUser.email = request.body.email}
+                if(request.body.gender){foundUser.gender = request.body.gender}
+                if(request.body.dob){foundUser.dob = request.body.dob}
+                if(request.body.phoneNo){foundUser.phoneNo = request.body.phoneNo}
+
+                foundUser.save( (err, updatedUser)=>{
+                    if(!err) return response.json(updatedUser)
+                })
+            }
         }
     })
 })
